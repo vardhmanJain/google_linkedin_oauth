@@ -1,3 +1,4 @@
+
 import express from "express";
 import jwt from "jsonwebtoken";
 import axios from "axios";
@@ -6,12 +7,12 @@ import querystring from "querystring";
 import cookieParser from "cookie-parser";
 import {
   SERVER_ROOT_URI,
-  GOOGLE_CLIENT_ID,
+  LINKEDIN_CLIENT_ID,
   JWT_SECRET,
-  GOOGLE_CLIENT_SECRET,
+  LINKEDIN_CLIENT_SECRET,
   COOKIE_NAME,
   UI_ROOT_URI,
-} from "./config";
+} from "./config-linkedin";
 
 const port = 4000;
 
@@ -28,19 +29,19 @@ app.use(
 
 app.use(cookieParser());
 
-const redirectURI = "auth/google";
+const redirectURI = "auth/linkedin";
 
 function getGoogleAuthURL() {
-  const rootUrl = "https://accounts.google.com/o/oauth2/v2/auth";
+  const rootUrl = "https://www.linkedin.com/oauth/v2/authorization";
   const options = {
     redirect_uri: `${SERVER_ROOT_URI}/${redirectURI}`,
-    client_id: GOOGLE_CLIENT_ID,
+    client_id: LINKEDIN_CLIENT_ID,
     access_type: "offline",
     response_type: "code",
     prompt: "consent",
     scope: [
-      "https://www.googleapis.com/auth/userinfo.profile",
-      "https://www.googleapis.com/auth/userinfo.email",
+      "r_liteprofile",
+      "r_emailaddress",
     ].join(" "),
   };
 
@@ -48,7 +49,7 @@ function getGoogleAuthURL() {
 }
 
 // Getting login URL
-app.get("/auth/google/url", (req, res) => {
+app.get("/auth/linkedin/url", (req, res) => {
   return res.redirect(getGoogleAuthURL());
 });
 
@@ -73,7 +74,7 @@ function getTokens({
    * Uses the code to get tokens
    * that can be used to fetch the user's profile
    */
-  const url = "https://oauth2.googleapis.com/token";
+  const url = "https://www.linkedin.com/oauth/v2/accessToken";
   const values = {
     code,
     client_id: clientId,
@@ -101,18 +102,18 @@ app.get(`/${redirectURI}`, async (req, res) => {
 
   const { id_token, access_token } = await getTokens({
     code,
-    clientId: GOOGLE_CLIENT_ID,
-    clientSecret: GOOGLE_CLIENT_SECRET,
+    clientId: LINKEDIN_CLIENT_ID,
+    clientSecret: LINKEDIN_CLIENT_SECRET,
     redirectUri: `${SERVER_ROOT_URI}/${redirectURI}`,
   });
 
   // Fetch the user's profile with the access token and bearer
   const googleUser = await axios
     .get(
-      `https://www.googleapis.com/oauth2/v1/userinfo?alt=json&access_token=${access_token}`,
+      `https://api.linkedin.com/v2/me`,
       {
         headers: {
-          Authorization: `Bearer ${id_token}`,
+          Authorization: `Bearer ${access_token}`,
         },
       }
     )
@@ -121,6 +122,8 @@ app.get(`/${redirectURI}`, async (req, res) => {
       console.error(`Failed to fetch user`);
       throw new Error(error.message);
     });
+
+    
 
   const token = jwt.sign(googleUser, JWT_SECRET);
 

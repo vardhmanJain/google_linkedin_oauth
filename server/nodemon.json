@@ -1,6 +1,6 @@
 {
     "ignore": [".git", "node_modules"],
     "watch": ["src"],
-    "exec": "ts-node ./src/index.ts",
+    "exec": "ts-node ./src/index-linkedin.ts",
     "ext": "ts,json"
 }

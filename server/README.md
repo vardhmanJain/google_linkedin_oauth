@@ -1,3 +1,5 @@
+## change to server directory
+
 ## step1: yarn
 
 ## step2: yarn run dev
